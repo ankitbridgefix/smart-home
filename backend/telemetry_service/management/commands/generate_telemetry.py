@@ -19,7 +19,7 @@ class Command(BaseCommand):
     help = "Generate 24 hours of 1-min interval telemetry for 5 devices"
 
     def add_arguments(self, parser):
-        parser.add_argument("--username", default="ankit", help="User to attach devices/telemetry to")
+        parser.add_argument("--username", default="admin", help="User to attach devices/telemetry to")
 
     def handle(self, *args, **opts):
         username = opts["username"]
@@ -67,4 +67,4 @@ class Command(BaseCommand):
             Telemetry.objects.bulk_create(rows, ignore_conflicts=True) 
 
         self.stdout.write(self.style.SUCCESS("Generated telemetry for last 24 hours."))
-        self.stdout.write(self.style.SUCCESS("Login with username='ankit', password='Pass@123'"))
+        self.stdout.write(self.style.SUCCESS("Login with username='admin', password='Pass@123'"))
