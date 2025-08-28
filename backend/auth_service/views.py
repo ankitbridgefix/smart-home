@@ -2,7 +2,9 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer, MeSerializer
+from .serializers import RegisterSerializer, MeSerializer ,CustomTokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 
 User = get_user_model()
 
@@ -40,3 +42,8 @@ class UserViewSet(viewsets.ModelViewSet):
         """Get current logged-in user"""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+    
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
