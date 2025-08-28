@@ -12,7 +12,8 @@ class DeviceSerializer(serializers.ModelSerializer):
         return round(obj.telemetry.aggregate(total=Sum("energy_kwh"))["total"] or 0.0, 4)
 
 class TelemetrySerializer(serializers.ModelSerializer):
+    device_name = serializers.CharField(source="device.name", read_only=True)
     class Meta:
         model = Telemetry
-        fields = ("id", "device", "timestamp", "energy_kwh")
+        fields = ("id", "device", "timestamp", "energy_kwh", "device_name")
         read_only_fields = ("id",)
