@@ -6,6 +6,9 @@ from django.db.models import Sum
 from .models import Device, Telemetry
 from .serializers import DeviceSerializer, TelemetrySerializer
 from .permissions import IsOwner
+import calendar
+from datetime import date
+from django.db.models.functions import TruncDay
 
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
@@ -49,4 +52,47 @@ class DeviceViewSet(viewsets.ModelViewSet):
         if end:
             qs = qs.filter(timestamp__lte=parse_datetime(end))
         total = qs.aggregate(total=Sum("energy_kwh"))["total"] or 0.0
-        return Response({"device_id": device.id, "total_kwh": round(total, 4)})
+        return Response({"device_id": device.id,"device_name":device.name ,"total_kwh": round(total, 4)})
+    
+
+    @action(detail=True, methods=["get"])
+    def monthly_graph(self, request, pk=None):
+        """
+        Returns daily energy usage for a device in a given month.
+        Accepts query param: ?month=January&year=2025 (year optional, defaults to current year)
+        """
+        device = self.get_object()
+        month_name = request.query_params.get("month")
+        year = int(request.query_params.get("year", date.today().year))
+
+        if not month_name:
+            return Response({"error": "Please provide a month (e.g., January, February)."}, status=400)
+
+        try:
+            month = list(calendar.month_name).index(month_name.capitalize())
+            if month == 0:
+                raise ValueError
+        except ValueError:
+            return Response({"error": f"Invalid month '{month_name}'."}, status=400)
+
+        # Filter telemetry by year + month
+        qs = device.telemetry.filter(timestamp__year=year, timestamp__month=month)
+
+        # Group by day
+        daily_data = (
+            qs.annotate(day=TruncDay("timestamp"))
+              .values("day")
+              .annotate(total=Sum("energy_kwh"))
+              .order_by("day")
+        )
+
+        return Response({
+            "device_id": device.id,
+            "device_name": device.name,
+            "month": month_name.capitalize(),
+            "year": year,
+            "data": [
+                {"date": entry["day"], "total_kwh": round(entry["total"], 4)}
+                for entry in daily_data
+            ]
+        })
